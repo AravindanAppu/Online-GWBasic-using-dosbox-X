@@ -158,7 +158,7 @@
     let ci = null;
     let shiftActive = false;
 
-    Dos(dosRoot, { wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js" })
+    Dos(dosRoot, { wdosboxUrl: "https://v8.js-dos.com/latest/emulators/wdosbox-x.js" })
       .ready((fs, main) => {
         fs.extract("basic.zip").then(() => {
           main(["-c","mount d .","-c","d:","-c","gwbasic"])
