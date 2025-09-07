@@ -94,8 +94,7 @@
 
     // Initialize js-dos with correct WASM backend URLs
     Dos(dosRoot, {
-      wdosboxUrl: "https://v8.js-dos.com/latest/emulators/wdosbox-x.js",
-      wdosboxWasmUrl: "https://v8.js-dos.com/latest/emulators/wdosbox-x.wasm"
+      wdosboxUrl: "https://v8.js-dos.com/latest/emulators/wdosbox-x.wasm",
     }).ready((fs, main) => {
       fs.extract("basic.zip").then(() => {
         main(["-c", "mount d .", "-c", "d:", "-c", "gwbasic"]).then(client => {
