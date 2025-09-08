@@ -33,7 +33,7 @@ const props = Dos(document.getElementById("dos"), {
   backend: "dosboxX",
   backendLocked: true,
   autoSave: false,
-  kiosk: false
+  kiosk: false,
       onEvent: (event, ci) => {
         if (event === "ci-ready") {
           console.log("Emulator ready. GW-BASIC should be running.");
