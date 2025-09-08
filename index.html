@@ -29,7 +29,10 @@
 indexedDB.deleteDatabase("dosbox");
 const props = Dos(document.getElementById("dos"), {
   url: "./basic.jsdos",
-  dosboxConf: "./dosbox.conf",
+  dosboxConf: '
+    [parallel]
+      paralle1=file file:output.txt
+      ',
   backend: "dosboxX",
   backendLocked: true,
   autoSave: false,
