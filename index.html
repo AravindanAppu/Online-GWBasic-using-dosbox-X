@@ -1,159 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>GW-BASIC Virtual Keyboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script src="https://js-dos.com/6.22/current/js-dos.js"></script>
-  <style>
-    body {
-      background: black;
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      font-family: 'Courier New', monospace;
-    }
-    #screen-container {
-      width: 100vw;
-      height: 45vh;
-    }
-    #dos-root {
-      width: 100%;
-      height: 100%;
-      border: 2px solid #666;
-    }
-    #keyboard-container {
-      width: 100vw;
-      height: 50vh;
-      background: #333;
-      display: flex;
-      flex-direction: column;
-      padding: 6px;
-      padding-bottom: env(safe-area-inset-bottom);
-      box-sizing: border-box;
-      gap: 4px;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-    }
-    .key-row {
-      display: flex;
-      flex-direction: row;
-      justify-content: center;
-      gap: 4px;
-    }
-    .key {
-      background: #444;
-      color: white;
-      font-size: 1.1em;
-      font-weight: bold;
-      text-align: center;
-      border-radius: 6px;
-      flex: 1;
-      min-width: 32px;
-      padding: 10px 0;
-      cursor: pointer;
-      user-select: none;
-    }
-    .key:active {
-      background: #777;
-      transform: translateY(1px);
-    }
-    .special {
-      flex: 1.5;
-      background: #4a3c1c;
-    }
-    .wide {
-      flex: 3;
-    }
-    .fkey {
-      font-size: 0.8em;
-      font-weight: normal;
-    }
-    .shift-active {
-      background: #c96 !important;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>gwbasic</title>
+
+    <style>
+        html, body {
+            height: 100%;
+        }
+
+        #dos {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+
+    <!-- js-dos style sheet -->
+    <link rel="stylesheet" href="https://v8.js-dos.com/latest/js-dos.css">
+
+    <!-- js-dos -->
+    <script src="https://v8.js-dos.com/latest/js-dos.js"></script>
 </head>
 <body>
-  <div id="screen-container">
-    <canvas id="dos-root"></canvas>
-  </div>
 
-  <div id="keyboard-container">
-    <!-- Keyboard layout (same as you provided) -->
-    <!-- F1 to F10, numbers, letters, etc. -->
-    <!-- Skipped here for brevity; use your full layout as before -->
-  </div>
+    <div id="dos" style="width: 100%; height: 100%"></div>
 
-  <script>
-    const dosRoot = document.getElementById("dos-root");
-    let ci = null;
-    let shiftActive = false;
+    <script>
+indexedDB.deleteDatabase("dosbox");
+const props = Dos(document.getElementById("dos"), {
+  url: "./basic.jsdos",
+  dosboxConf: "./dosbox.conf",
+  backend: "dosboxX",
+  backendLocked: true,
+  autoSave: false,
+  kiosk: false
+      onEvent: (event, ci) => {
+        if (event === "ci-ready") {
+          console.log("Emulator ready. GW-BASIC should be running.");
 
-    // Initialize js-dos with correct WASM backend URLs
-    Dos(dosRoot, {
-      wdosboxUrl: "./wdosbox-x.js",
-    }).ready((fs, main) => {
-      fs.extract("basic.zip").then(() => {
-        main(["-c", "mount d .", "-c", "d:", "-c", "gwbasic"]).then(client => {
-          ci = client;
-        });
-      });
-    });
-
-    function simulateKeyEvent(keyCode, pressed) {
-      const eventType = pressed ? "keydown" : "keyup";
-      const event = document.createEvent("KeyboardEvent");
-      if (event.initKeyboardEvent) {
-        event.initKeyboardEvent(eventType, true, true, window, false, false, false, false, keyCode, 0);
-      } else {
-        event.initKeyEvent(eventType, true, true, window, false, false, false, false, keyCode, 0);
-      }
-      Object.defineProperty(event, "keyCode", { get: () => keyCode });
-      Object.defineProperty(event, "which", { get: () => keyCode });
-      document.dispatchEvent(event);
-    }
-
-    function toggleShift() {
-      shiftActive = !shiftActive;
-      document.getElementById("shift-key").classList.toggle("shift-active", shiftActive);
-    }
-
-    function pressKey(code) {
-      if (shiftActive) {
-        const shiftedMap = {
-          49:33,50:64,51:35,52:36,53:37,54:94,55:38,56:42,57:40,48:41,
-          186:58,222:34,188:60,190:62,191:63,189:95,187:43
-        };
-        if (code >= 65 && code <= 90) {
-          simulateKeyEvent(code,true);
-          simulateKeyEvent(code,false);
-        } else if (shiftedMap[code]) {
-          simulateKeyEvent(shiftedMap[code],true);
-          simulateKeyEvent(shiftedMap[code],false);
-        } else {
-          simulateKeyEvent(code,true);
-          simulateKeyEvent(code,false);
+          // Periodically check if 'output.txt' exists
+          const interval = setInterval(() => {
+            ci.fsReadFile("output.txt")
+              .then(data => {
+                console.log("output.txt found! Stopping emulator...");
+                clearInterval(interval); // Stop checking
+                props.stop(); // Stop emulator
+              })
+              .catch(err => {
+                // File not found yet, keep waiting
+              });
+          }, 1000); // Check every 1 second
         }
-        shiftActive = false;
-        document.getElementById("shift-key").classList.remove("shift-active");
-      } else {
-        simulateKeyEvent(code,true);
-        simulateKeyEvent(code,false);
-      }
-      if (navigator.vibrate) navigator.vibrate(20);
-    }
-
-    // Safe audio context fix
-    ["click","touchstart"].forEach(evt => {
-      document.addEventListener(evt, () => {
-        if (ci && ci.audioContext && ci.audioContext.state === "suspended") {
-          ci.audioContext.resume();
-        }
-      }, { once:true });
-    });
-  </script>
+      },
+});
+    </script>
 </body>
 </html>
